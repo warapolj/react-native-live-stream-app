@@ -16,7 +16,7 @@ const App = () => {
         <Stack.Screen
           name="VideoPlayer"
           component={VideoPlayerScreen}
-          options={{headerShown: false, animation: 'slide_from_right'}}
+          options={{headerShown: true, animation: 'slide_from_right'}}
         />
       </Stack.Navigator>
     </NavigationContainer>

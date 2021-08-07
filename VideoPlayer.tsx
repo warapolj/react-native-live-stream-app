@@ -7,22 +7,29 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
-import Video, {LoadError, OnBufferData} from 'react-native-video';
+import Video, {
+  LoadError,
+  OnBandwidthUpdateData,
+  OnBufferData,
+  OnLoadData,
+  OnProgressData,
+} from 'react-native-video';
 import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {Alert} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 const {width, height} = Dimensions.get('window');
 
 const VideoPlayer = () => {
+  const navigation = useNavigation();
   const player = useRef(null);
 
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [isShowCtrl, setIsShowCtrl] = useState(false);
+  const [isShowCtrl, setIsShowCtrl] = useState(true);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -36,12 +43,46 @@ const VideoPlayer = () => {
     };
   }, [isFullScreen]);
 
-  const onBuffer = (buefferData: OnBufferData) => {
-    console.log('bueffer', buefferData);
+  const onLoad = (data: OnLoadData) => {
+    console.log('onLoad', data);
+  };
+
+  const onEnd = () => {
+    Alert.alert('This live is finished.', '', [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  };
+
+  const onBuffer = (data: OnBufferData) => {
+    if (data.isBuffering === false) {
+      setIsLoading(false);
+    }
+  };
+
+  const onProgress = (data: OnProgressData) => {
+    console.log('onProgressData', data);
+  };
+
+  const onBandwidthUpdate = (data: OnBandwidthUpdateData) => {
+    console.log('onBandwidthUpdate', data);
   };
 
   const onError = (error: LoadError) => {
-    console.log('error', error);
+    console.log('onError', error);
+    if (
+      error.error?.code === -1100 ||
+      error.error?.domain === 'NSURLErrorDomain'
+    ) {
+      Alert.alert('This live is finished.', '', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    }
   };
 
   return (
@@ -62,10 +103,14 @@ const VideoPlayer = () => {
         muted={muted}
         paused={paused}
         resizeMode="contain"
-        progressUpdateInterval={250}
-        onBuffer={onBuffer}
-        onError={onError}
+        progressUpdateInterval={1000}
         fullscreen={isFullScreen}
+        // onLoad={onLoad}
+        onEnd={onEnd}
+        onBuffer={onBuffer}
+        // onProgress={onProgress}
+        onBandwidthUpdate={onBandwidthUpdate}
+        onError={onError}
         style={[
           {
             position: 'absolute',
