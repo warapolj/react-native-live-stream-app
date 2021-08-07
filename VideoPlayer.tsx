@@ -1,11 +1,11 @@
 import React, {useRef, useState, useEffect} from 'react';
 import {
-  StyleSheet,
   TouchableOpacity,
   View,
   Dimensions,
   Text,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Video, {
   LoadError,
@@ -18,6 +18,7 @@ import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useMemo} from 'react';
 
 const {width, height} = Dimensions.get('window');
 
@@ -48,9 +49,7 @@ const VideoPlayer = () => {
   };
 
   const onBuffer = (data: OnBufferData) => {
-    if (data.isBuffering) {
-      setIsLoading(true);
-    }
+    setIsLoading(data.isBuffering);
   };
 
   const onReadyForDisplay = () => {
@@ -89,10 +88,86 @@ const VideoPlayer = () => {
     }
   };
 
+  const renderCtrlIsLive = useMemo(() => {
+    return (
+      <View
+        style={{
+          position: 'absolute',
+          backgroundColor: 'red',
+          width: 50,
+          borderRadius: 5,
+          marginTop: 15,
+          marginLeft: 15,
+          alignItems: 'center',
+        }}>
+        <Text style={{padding: 5, color: '#fff', fontWeight: 'bold'}}>
+          Live
+        </Text>
+      </View>
+    );
+  }, []);
+
+  const renderCtrlPlayPause = useMemo(() => {
+    return (
+      <View
+        style={{
+          position: 'relative',
+          justifyContent: 'center',
+          alignItems: 'center',
+          alignSelf: 'center',
+          width: '100%',
+          height: '100%',
+        }}>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#fff" animating={true} />
+        ) : (
+          <TouchableOpacity onPress={() => setPaused(!paused)}>
+            <Icon
+              name={paused ? 'play-circle-outline' : 'pause-circle-outline'}
+              size={50}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }, [isLoading, paused]);
+
+  const renderCtrlBottom = useMemo(() => {
+    return (
+      <View
+        style={{
+          position: 'relative',
+          width: isFullScreen ? '95%' : '100%',
+          height: 35,
+          bottom: 50,
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          paddingRight: 20,
+        }}>
+        <TouchableOpacity
+          onPress={() => setMuted(!muted)}
+          style={{marginRight: 10}}>
+          <Icon
+            name={muted ? 'volume-off' : 'volume-high'}
+            size={25}
+            color="#fff"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsFullScreen(!isFullScreen)}>
+          <Icon
+            name={isFullScreen ? 'fullscreen-exit' : 'fullscreen'}
+            size={25}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  }, [isFullScreen, muted]);
+
   return (
     <View
       style={{
-        position: 'absolute',
         height: isFullScreen ? '100%' : '30%',
         width: '100%',
         backgroundColor: 'grey',
@@ -108,14 +183,15 @@ const VideoPlayer = () => {
         paused={paused}
         resizeMode="contain"
         progressUpdateInterval={1000}
-        fullscreen={isFullScreen}
-        // onLoad={onLoad}
+        fullscreen={Platform.OS === 'android' ? isFullScreen : false}
+        onLoad={onLoad}
         onBuffer={onBuffer}
         onReadyForDisplay={onReadyForDisplay}
         // onProgress={onProgress}
         onBandwidthUpdate={onBandwidthUpdate}
         onEnd={onEnd}
         onError={onError}
+        pictureInPicture={false}
         style={[
           {
             position: 'absolute',
@@ -129,69 +205,9 @@ const VideoPlayer = () => {
       />
       {isShowCtrl && (
         <>
-          <View
-            style={{
-              position: 'absolute',
-              backgroundColor: 'red',
-              borderRadius: 5,
-              marginTop: 15,
-              marginLeft: 15,
-            }}>
-            <Text style={{padding: 5, color: '#fff', fontWeight: 'bold'}}>
-              Live
-            </Text>
-          </View>
-          <View
-            style={{
-              position: 'absolute',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
-              height: '100%',
-            }}>
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#fff" animating={true} />
-            ) : (
-              <TouchableOpacity
-                onPress={() => setPaused(!paused)}
-                style={{marginRight: 10}}>
-                <Icon
-                  name={paused ? 'play-circle-outline' : 'pause-circle-outline'}
-                  size={40}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View
-            style={{
-              position: 'absolute',
-              width: isFullScreen ? '90%' : '100%',
-              height: '100%',
-              justifyContent: 'flex-end',
-              alignItems: 'flex-end',
-              alignSelf: 'center',
-              paddingBottom: 20,
-              paddingRight: 20,
-              flexDirection: 'row',
-            }}>
-            <TouchableOpacity
-              onPress={() => setMuted(!muted)}
-              style={{marginRight: 10}}>
-              <Icon
-                name={muted ? 'volume-off' : 'volume-high'}
-                size={25}
-                color="#fff"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsFullScreen(!isFullScreen)}>
-              <Icon
-                name={isFullScreen ? 'fullscreen-exit' : 'fullscreen'}
-                size={25}
-                color="#fff"
-              />
-            </TouchableOpacity>
-          </View>
+          {renderCtrlIsLive}
+          {renderCtrlPlayPause}
+          {renderCtrlBottom}
         </>
       )}
     </View>
