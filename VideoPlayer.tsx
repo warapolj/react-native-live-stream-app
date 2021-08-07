@@ -47,19 +47,14 @@ const VideoPlayer = () => {
     console.log('onLoad', data);
   };
 
-  const onEnd = () => {
-    Alert.alert('This live is finished.', '', [
-      {
-        text: 'OK',
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+  const onBuffer = (data: OnBufferData) => {
+    if (data.isBuffering) {
+      setIsLoading(true);
+    }
   };
 
-  const onBuffer = (data: OnBufferData) => {
-    if (data.isBuffering === false) {
-      setIsLoading(false);
-    }
+  const onReadyForDisplay = () => {
+    setIsLoading(false);
   };
 
   const onProgress = (data: OnProgressData) => {
@@ -68,6 +63,15 @@ const VideoPlayer = () => {
 
   const onBandwidthUpdate = (data: OnBandwidthUpdateData) => {
     console.log('onBandwidthUpdate', data);
+  };
+
+  const onEnd = () => {
+    Alert.alert('This live is finished.', '', [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
   };
 
   const onError = (error: LoadError) => {
@@ -106,10 +110,11 @@ const VideoPlayer = () => {
         progressUpdateInterval={1000}
         fullscreen={isFullScreen}
         // onLoad={onLoad}
-        onEnd={onEnd}
         onBuffer={onBuffer}
+        onReadyForDisplay={onReadyForDisplay}
         // onProgress={onProgress}
         onBandwidthUpdate={onBandwidthUpdate}
+        onEnd={onEnd}
         onError={onError}
         style={[
           {
