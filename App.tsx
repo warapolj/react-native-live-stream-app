@@ -3,8 +3,8 @@ import {Button, SafeAreaView} from 'react-native';
 import 'react-native-gesture-handler';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {FlatList} from 'react-native-gesture-handler';
-import VideoPlayerScreen from './VideoPlayer';
+import StreamPlayerScreen from './StreamPlayer';
+import StreamCameraScreen from './StreamCamera';
 
 const Stack = createNativeStackNavigator();
 
@@ -14,9 +14,22 @@ const App = () => {
       <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen
-          name="VideoPlayer"
-          component={VideoPlayerScreen}
-          options={{headerShown: true, animation: 'slide_from_right'}}
+          name="StreamPlayer"
+          component={StreamPlayerScreen}
+          options={{
+            headerShown: true,
+            animation: 'slide_from_right',
+            title: 'Stream Player',
+          }}
+        />
+        <Stack.Screen
+          name="StreamCamera"
+          component={StreamCameraScreen}
+          options={{
+            headerShown: true,
+            animation: 'slide_from_right',
+            title: 'Stream Camera',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -26,21 +39,15 @@ const App = () => {
 const HomeScreen = () => {
   const navigation = useNavigation();
 
-  const lives = ['sk_us-east-1_aET4MwEY16fY_3fOnvHIEvLaKL9jAa8M1RsIDucuphK'];
-
   return (
     <SafeAreaView style={{flex: 1, paddingBottom: 50}}>
-      <FlatList
-        data={lives}
-        keyExtractor={item => item}
-        renderItem={({item}) => {
-          return (
-            <Button
-              title={item}
-              onPress={() => navigation.navigate('VideoPlayer')}
-            />
-          );
-        }}
+      <Button
+        title={'Stream Player'}
+        onPress={() => navigation.navigate('StreamPlayer')}
+      />
+      <Button
+        title={'Stream Camera'}
+        onPress={() => navigation.navigate('StreamCamera')}
       />
     </SafeAreaView>
   );

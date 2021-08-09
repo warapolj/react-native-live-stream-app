@@ -70,5 +70,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>AwesomeProject requires access to your phone’s camera.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>AwesomeProject requires access to your phone’s Microphone.</string>
 </dict>
 </plist>

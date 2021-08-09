@@ -1,4 +1,4 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, {useRef, useState, useEffect, useMemo} from 'react';
 import {
   TouchableOpacity,
   View,
@@ -18,7 +18,6 @@ import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {useMemo} from 'react';
 
 const {width, height} = Dimensions.get('window');
 
@@ -133,6 +132,24 @@ const VideoPlayer = () => {
     );
   }, [isLoading, paused]);
 
+  const renderLoading = useMemo(() => {
+    return (
+      isLoading && (
+        <View
+          style={{
+            position: 'relative',
+            justifyContent: 'center',
+            alignItems: 'center',
+            alignSelf: 'center',
+            width: '100%',
+            height: '100%',
+          }}>
+          <ActivityIndicator size="large" color="#fff" animating={true} />
+        </View>
+      )
+    );
+  }, [isLoading]);
+
   const renderCtrlBottom = useMemo(() => {
     return (
       <View
@@ -168,8 +185,10 @@ const VideoPlayer = () => {
   return (
     <View
       style={{
-        height: isFullScreen ? '100%' : '30%',
-        width: '100%',
+        // height: isFullScreen ? '100%' : '30%',
+        // height: '100%',
+        // width: '100%',
+        flex: 1,
         backgroundColor: 'grey',
       }}>
       <Video
@@ -181,7 +200,7 @@ const VideoPlayer = () => {
         volume={1}
         muted={muted}
         paused={paused}
-        resizeMode="contain"
+        resizeMode="cover"
         progressUpdateInterval={1000}
         fullscreen={Platform.OS === 'android' ? isFullScreen : false}
         onLoad={onLoad}
@@ -191,23 +210,24 @@ const VideoPlayer = () => {
         onBandwidthUpdate={onBandwidthUpdate}
         onEnd={onEnd}
         onError={onError}
-        pictureInPicture={false}
         style={[
           {
-            position: 'absolute',
-            aspectRatio: width / height,
+            flex:1,
+            // position: 'absolute',
+            // aspectRatio: width / height,
             backgroundColor: '#000',
-            height: '100%',
-            width: '100%',
+            // height: '100%',
+            // width: '100%',
           },
-          isShowCtrl && {opacity: 0.5},
+          // isShowCtrl && {opacity: 0.5},
         ]}
       />
       {isShowCtrl && (
         <>
           {renderCtrlIsLive}
-          {renderCtrlPlayPause}
-          {renderCtrlBottom}
+          {renderLoading}
+          {/* {renderCtrlPlayPause} */}
+          {/* {renderCtrlBottom} */}
         </>
       )}
     </View>
