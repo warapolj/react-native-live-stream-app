@@ -1,17 +1,17 @@
-import React, {useRef} from 'react';
-import {useMemo} from 'react';
-import {useState} from 'react';
-import {Text, TouchableOpacity, View} from 'react-native';
+import React, {useRef, useState, useMemo, useEffect} from 'react';
+import {Text, TouchableOpacity, View, SafeAreaView} from 'react-native';
 import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
-import {useEffect} from 'react';
+import GestureRecognizer from 'react-native-swipe-gestures';
+import Chat from './Chat';
 
 const StreamCamera = () => {
   const camera = useRef(null);
   const [isLive, setIsLive] = useState(false);
   const [stopwatchStart, setStopwatchStart] = useState(false);
   const [stopwatchReset, setStopwatchReset] = useState(false);
+  const [chatIsVisible, setChaIstVisible] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -111,12 +111,19 @@ const StreamCamera = () => {
     );
   }, [isLive]);
 
-  const onStatus = (status) => {
-    console.log('onStatus', status)
-  }
+  const onStatus = status => {
+    console.log('onStatus', status);
+  };
 
   return (
-    <View style={{flex: 1}}>
+    <GestureRecognizer
+      config={{
+        velocityThreshold: 0.3,
+        directionalOffsetThreshold: 80,
+      }}
+      onSwipeLeft={() => setChaIstVisible(prevValue => !prevValue)}
+      onSwipeRight={() => setChaIstVisible(prevValue => !prevValue)}
+      style={{flex: 1}}>
       <NodeCameraView
         style={{flex: 1}}
         ref={camera}
@@ -138,7 +145,8 @@ const StreamCamera = () => {
       />
       {renderCtrlLiveTime}
       {renderCtrlLiveButton}
-    </View>
+      <Chat isVisible={chatIsVisible} />
+    </GestureRecognizer>
   );
 };
 

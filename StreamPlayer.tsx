@@ -2,10 +2,10 @@ import React, {useRef, useState, useEffect, useMemo} from 'react';
 import {
   TouchableOpacity,
   View,
-  Dimensions,
   Text,
   ActivityIndicator,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import Video, {
   LoadError,
@@ -18,18 +18,19 @@ import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-
-const {width, height} = Dimensions.get('window');
+import GestureRecognizer from 'react-native-swipe-gestures';
+import Chat from './Chat';
 
 const VideoPlayer = () => {
   const navigation = useNavigation();
-  const player = useRef(null);
+  const playerRef = useRef(null);
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [isShowCtrl, setIsShowCtrl] = useState(true);
+  const [chatIsVisible, setChaIstVisible] = useState(false);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -64,12 +65,12 @@ const VideoPlayer = () => {
   };
 
   const onEnd = () => {
-    Alert.alert('This live is finished.', '', [
-      {
-        text: 'OK',
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+    // Alert.alert('This live is finished.', '', [
+    //   {
+    //     text: 'OK',
+    //     onPress: () => navigation.goBack(),
+    //   },
+    // ]);
   };
 
   const onError = (error: LoadError) => {
@@ -78,12 +79,12 @@ const VideoPlayer = () => {
       error.error?.code === -1100 ||
       error.error?.domain === 'NSURLErrorDomain'
     ) {
-      Alert.alert('This live is finished.', '', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      // Alert.alert('This live is finished.', '', [
+      //   {
+      //     text: 'OK',
+      //     onPress: () => navigation.goBack(),
+      //   },
+      // ]);
     }
   };
 
@@ -182,8 +183,12 @@ const VideoPlayer = () => {
     );
   }, [isFullScreen, muted]);
 
+  const renderChat = useMemo(() => {
+    return <Chat isVisible={chatIsVisible} />;
+  }, [chatIsVisible]);
+
   return (
-    <View
+    <SafeAreaView
       style={{
         // height: isFullScreen ? '100%' : '30%',
         // height: '100%',
@@ -191,46 +196,58 @@ const VideoPlayer = () => {
         flex: 1,
         backgroundColor: 'grey',
       }}>
-      <Video
-        ref={player}
-        source={{
-          uri: 'https://4144f7c510c7.us-east-1.playback.live-video.net/api/video/v1/us-east-1.302125021807.channel.R6hCSBhdIYmy.m3u8',
+      <GestureRecognizer
+        config={{
+          velocityThreshold: 0.3,
+          directionalOffsetThreshold: 200,
         }}
-        rate={1}
-        volume={1}
-        muted={muted}
-        paused={paused}
-        resizeMode="cover"
-        progressUpdateInterval={1000}
-        fullscreen={Platform.OS === 'android' ? isFullScreen : false}
-        onLoad={onLoad}
-        onBuffer={onBuffer}
-        onReadyForDisplay={onReadyForDisplay}
-        // onProgress={onProgress}
-        onBandwidthUpdate={onBandwidthUpdate}
-        onEnd={onEnd}
-        onError={onError}
-        style={[
-          {
-            flex:1,
-            // position: 'absolute',
-            // aspectRatio: width / height,
-            backgroundColor: '#000',
-            // height: '100%',
-            // width: '100%',
-          },
-          // isShowCtrl && {opacity: 0.5},
-        ]}
-      />
-      {isShowCtrl && (
+        onSwipeLeft={() => setChaIstVisible(prevValue => !prevValue)}
+        onSwipeRight={() => setChaIstVisible(prevValue => !prevValue)}
+        style={{flex: 1}}>
+        <Video
+          ref={playerRef}
+          source={{
+            uri: 'https://4144f7c510c7.us-east-1.playback.live-video.net/api/video/v1/us-east-1.302125021807.channel.R6hCSBhdIYmy.m3u8',
+          }}
+          rate={1}
+          volume={1}
+          muted={muted}
+          paused={paused}
+          resizeMode="cover"
+          progressUpdateInterval={1000}
+          fullscreen={Platform.OS === 'android' ? isFullScreen : false}
+          onLoad={onLoad}
+          onBuffer={onBuffer}
+          onReadyForDisplay={onReadyForDisplay}
+          // onProgress={onProgress}
+          onBandwidthUpdate={onBandwidthUpdate}
+          onEnd={onEnd}
+          onError={onError}
+          style={[
+            {
+              flex: 1,
+              // position: 'absolute',
+              // aspectRatio: width / height,
+              backgroundColor: '#000',
+              // height: '100%',
+              // width: '100%',
+            },
+            // isShowCtrl && {opacity: 0.5},
+          ]}
+        />
         <>
-          {renderCtrlIsLive}
-          {renderLoading}
-          {/* {renderCtrlPlayPause} */}
-          {/* {renderCtrlBottom} */}
+          {isShowCtrl && (
+            <>
+              {renderCtrlIsLive}
+              {renderLoading}
+              {/* {renderCtrlPlayPause} */}
+              {/* {renderCtrlBottom} */}
+            </>
+          )}
+          {renderChat}
         </>
-      )}
-    </View>
+      </GestureRecognizer>
+    </SafeAreaView>
   );
 };
 
