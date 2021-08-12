@@ -19,15 +19,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import GestureRecognizer from 'react-native-swipe-gestures';
-import Modal from 'react-native-modal';
-import Chat from './Chat';
-
-interface ISwipe {
-  status: boolean;
-  direction: SwipeDirection;
-}
-
-type SwipeDirection = 'left' | 'right' | undefined;
+import ChatModal, {ISwipe, SwipeDirection} from './Chat';
 
 const VideoPlayer = () => {
   const navigation = useNavigation();
@@ -202,25 +194,7 @@ const VideoPlayer = () => {
   }, [isFullScreen, muted]);
 
   const renderChatModal = useMemo(() => {
-    const animationIn =
-      swipe.direction === 'left' ? 'slideInRight' : 'slideInLeft';
-    const animationOut =
-      swipe.direction === 'left' ? 'slideOutLeft' : 'slideOutRight';
-
-    return (
-      <Modal
-        isVisible={swipe.status}
-        animationIn={animationIn}
-        animationOut={animationOut}
-        animationInTiming={200}
-        animationOutTiming={200}
-        style={{
-          margin: 0,
-          marginBottom: 44,
-        }}>
-        <Chat />
-      </Modal>
-    );
+    return <ChatModal {...swipe} />;
   }, [swipe]);
 
   return (

@@ -4,14 +4,17 @@ import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
 import GestureRecognizer from 'react-native-swipe-gestures';
-import Chat from './Chat';
+import ChatModal, {ISwipe, SwipeDirection} from './Chat';
 
 const StreamCamera = () => {
   const camera = useRef(null);
   const [isLive, setIsLive] = useState(false);
   const [stopwatchStart, setStopwatchStart] = useState(false);
   const [stopwatchReset, setStopwatchReset] = useState(false);
-  const [chatIsVisible, setChaIstVisible] = useState(false);
+  const [swipe, setSwipe] = useState<ISwipe>({
+    status: false,
+    direction: undefined,
+  });
 
   useEffect(() => {
     return () => {
@@ -34,6 +37,21 @@ const StreamCamera = () => {
       setStopwatchStart(true);
     }
   };
+
+  const onStatus = status => {
+    console.log('onStatus', status);
+  };
+
+  const onSwipe = (direction: SwipeDirection) => {
+    setSwipe({
+      status: !swipe.status,
+      direction,
+    });
+  };
+
+  const renderChatModal = useMemo(() => {
+    return <ChatModal {...swipe} />;
+  }, [swipe]);
 
   const renderStopWatchTimer = useMemo(() => {
     return (
@@ -111,18 +129,14 @@ const StreamCamera = () => {
     );
   }, [isLive]);
 
-  const onStatus = status => {
-    console.log('onStatus', status);
-  };
-
   return (
     <GestureRecognizer
       config={{
         velocityThreshold: 0.3,
         directionalOffsetThreshold: 80,
       }}
-      onSwipeLeft={() => setChaIstVisible(prevValue => !prevValue)}
-      onSwipeRight={() => setChaIstVisible(prevValue => !prevValue)}
+      onSwipeLeft={() => onSwipe('left')}
+      onSwipeRight={() => onSwipe('right')}
       style={{flex: 1}}>
       <NodeCameraView
         style={{flex: 1}}
@@ -145,7 +159,7 @@ const StreamCamera = () => {
       />
       {renderCtrlLiveTime}
       {renderCtrlLiveButton}
-      <Chat isVisible={chatIsVisible} />
+      {renderChatModal}
     </GestureRecognizer>
   );
 };

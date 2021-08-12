@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Keyboard} from 'react-native';
+import {io} from 'socket.io-client';
 
 export const useKeyBoardOffset = () => {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -22,4 +23,3 @@ export const useKeyBoardOffset = () => {
 
   return {keyboardOffset};
 };
-
