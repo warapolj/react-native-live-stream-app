@@ -19,7 +19,15 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import GestureRecognizer from 'react-native-swipe-gestures';
+import Modal from 'react-native-modal';
 import Chat from './Chat';
+
+interface ISwipe {
+  status: boolean;
+  direction: SwipeDirection;
+}
+
+type SwipeDirection = 'left' | 'right' | undefined;
 
 const VideoPlayer = () => {
   const navigation = useNavigation();
@@ -30,7 +38,10 @@ const VideoPlayer = () => {
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [isShowCtrl, setIsShowCtrl] = useState(true);
-  const [chatIsVisible, setChaIstVisible] = useState(false);
+  const [swipe, setSwipe] = useState<ISwipe>({
+    status: false,
+    direction: undefined,
+  });
 
   useEffect(() => {
     if (isFullScreen) {
@@ -86,6 +97,13 @@ const VideoPlayer = () => {
       //   },
       // ]);
     }
+  };
+
+  const onSwipe = (direction: SwipeDirection) => {
+    setSwipe({
+      status: !swipe.status,
+      direction,
+    });
   };
 
   const renderCtrlIsLive = useMemo(() => {
@@ -183,9 +201,27 @@ const VideoPlayer = () => {
     );
   }, [isFullScreen, muted]);
 
-  const renderChat = useMemo(() => {
-    return <Chat isVisible={chatIsVisible} />;
-  }, [chatIsVisible]);
+  const renderChatModal = useMemo(() => {
+    const animationIn =
+      swipe.direction === 'left' ? 'slideInRight' : 'slideInLeft';
+    const animationOut =
+      swipe.direction === 'left' ? 'slideOutLeft' : 'slideOutRight';
+
+    return (
+      <Modal
+        isVisible={swipe.status}
+        animationIn={animationIn}
+        animationOut={animationOut}
+        animationInTiming={200}
+        animationOutTiming={200}
+        style={{
+          margin: 0,
+          marginBottom: 44,
+        }}>
+        <Chat />
+      </Modal>
+    );
+  }, [swipe]);
 
   return (
     <SafeAreaView
@@ -201,8 +237,8 @@ const VideoPlayer = () => {
           velocityThreshold: 0.3,
           directionalOffsetThreshold: 200,
         }}
-        onSwipeLeft={() => setChaIstVisible(prevValue => !prevValue)}
-        onSwipeRight={() => setChaIstVisible(prevValue => !prevValue)}
+        onSwipeLeft={() => onSwipe('left')}
+        onSwipeRight={() => onSwipe('right')}
         style={{flex: 1}}>
         <Video
           ref={playerRef}
@@ -244,7 +280,7 @@ const VideoPlayer = () => {
               {/* {renderCtrlBottom} */}
             </>
           )}
-          {renderChat}
+          {renderChatModal}
         </>
       </GestureRecognizer>
     </SafeAreaView>

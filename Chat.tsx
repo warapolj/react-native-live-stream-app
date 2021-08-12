@@ -2,9 +2,7 @@ import React from 'react';
 import {Button, TextInput, View, ScrollView} from 'react-native';
 import {useKeyBoardOffset} from './hooks';
 
-const Chat: React.FC<{isVisible: boolean}> = ({isVisible}) => {
-  if (!isVisible) return <></>;
-
+const Chat = () => {
   const {keyboardOffset} = useKeyBoardOffset();
 
   return (
