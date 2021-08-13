@@ -3,24 +3,43 @@ import {Text, TouchableOpacity, View, SafeAreaView} from 'react-native';
 import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
-import GestureRecognizer from 'react-native-swipe-gestures';
-import ChatModal, {ISwipe, SwipeDirection} from './Chat';
+import Chat, {IMessageList} from './Chat';
+import {
+  connectSocket,
+  disconnectSocket,
+  subscribeToChat,
+  sendMessage,
+} from './socketio';
 
 const StreamCamera = () => {
   const camera = useRef(null);
   const [isLive, setIsLive] = useState(false);
   const [stopwatchStart, setStopwatchStart] = useState(false);
   const [stopwatchReset, setStopwatchReset] = useState(false);
-  const [swipe, setSwipe] = useState<ISwipe>({
-    status: false,
-    direction: undefined,
-  });
+  const [messageList, setMessageList] = useState<IMessageList[]>([]);
 
   useEffect(() => {
     return () => {
       camera.current?.stop();
     };
   }, []);
+
+  useEffect(() => {
+    if (isLive) {
+      connectSocket();
+      subscribeToChat((err: boolean | null, data: any) => {
+        if (!err && data) {
+          setMessageList([...messageList, {...data}]);
+        }
+      });
+    } else {
+      disconnectSocket();
+    }
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [isLive]);
 
   const toggleLiveButton = () => {
     if (isLive) {
@@ -42,16 +61,9 @@ const StreamCamera = () => {
     console.log('onStatus', status);
   };
 
-  const onSwipe = (direction: SwipeDirection) => {
-    setSwipe({
-      status: !swipe.status,
-      direction,
-    });
-  };
-
-  const renderChatModal = useMemo(() => {
-    return <ChatModal {...swipe} />;
-  }, [swipe]);
+  const renderChat = useMemo(() => {
+    return <Chat messageList={messageList} sendMessage={sendMessage} />;
+  }, []);
 
   const renderStopWatchTimer = useMemo(() => {
     return (
@@ -130,14 +142,7 @@ const StreamCamera = () => {
   }, [isLive]);
 
   return (
-    <GestureRecognizer
-      config={{
-        velocityThreshold: 0.3,
-        directionalOffsetThreshold: 80,
-      }}
-      onSwipeLeft={() => onSwipe('left')}
-      onSwipeRight={() => onSwipe('right')}
-      style={{flex: 1}}>
+    <SafeAreaView style={{flex: 1}}>
       <NodeCameraView
         style={{flex: 1}}
         ref={camera}
@@ -159,8 +164,8 @@ const StreamCamera = () => {
       />
       {renderCtrlLiveTime}
       {renderCtrlLiveButton}
-      {renderChatModal}
-    </GestureRecognizer>
+      {isLive && renderChat}
+    </SafeAreaView>
   );
 };
 

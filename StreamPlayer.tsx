@@ -18,8 +18,13 @@ import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import GestureRecognizer from 'react-native-swipe-gestures';
-import ChatModal, {ISwipe, SwipeDirection} from './Chat';
+import Chat, {IMessageList, mockMessage} from './Chat';
+import {
+  connectSocket,
+  disconnectSocket,
+  subscribeToChat,
+  sendMessage,
+} from './socketio';
 
 const VideoPlayer = () => {
   const navigation = useNavigation();
@@ -29,11 +34,7 @@ const VideoPlayer = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [isShowCtrl, setIsShowCtrl] = useState(true);
-  const [swipe, setSwipe] = useState<ISwipe>({
-    status: false,
-    direction: undefined,
-  });
+  const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -46,6 +47,19 @@ const VideoPlayer = () => {
       Orientation.lockToPortrait();
     };
   }, [isFullScreen]);
+
+  useEffect(() => {
+    connectSocket();
+    subscribeToChat((err: boolean | null, data: any) => {
+      if (!err && data) {
+        setMessageList([...messageList, {...data}]);
+      }
+    });
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
 
   const onLoad = (data: OnLoadData) => {
     console.log('onLoad', data);
@@ -89,13 +103,6 @@ const VideoPlayer = () => {
       //   },
       // ]);
     }
-  };
-
-  const onSwipe = (direction: SwipeDirection) => {
-    setSwipe({
-      status: !swipe.status,
-      direction,
-    });
   };
 
   const renderCtrlIsLive = useMemo(() => {
@@ -193,27 +200,9 @@ const VideoPlayer = () => {
     );
   }, [isFullScreen, muted]);
 
-  const renderChatModal = useMemo(() => {
-    return <ChatModal {...swipe} />;
-  }, [swipe]);
-
-  return (
-    <SafeAreaView
-      style={{
-        // height: isFullScreen ? '100%' : '30%',
-        // height: '100%',
-        // width: '100%',
-        flex: 1,
-        backgroundColor: 'grey',
-      }}>
-      <GestureRecognizer
-        config={{
-          velocityThreshold: 0.3,
-          directionalOffsetThreshold: 200,
-        }}
-        onSwipeLeft={() => onSwipe('left')}
-        onSwipeRight={() => onSwipe('right')}
-        style={{flex: 1}}>
+  const renderVideo = useMemo(() => {
+    return (
+      <>
         <Video
           ref={playerRef}
           source={{
@@ -245,18 +234,27 @@ const VideoPlayer = () => {
             // isShowCtrl && {opacity: 0.5},
           ]}
         />
-        <>
-          {isShowCtrl && (
-            <>
-              {renderCtrlIsLive}
-              {renderLoading}
-              {/* {renderCtrlPlayPause} */}
-              {/* {renderCtrlBottom} */}
-            </>
-          )}
-          {renderChatModal}
-        </>
-      </GestureRecognizer>
+        {renderCtrlIsLive}
+        {renderLoading}
+      </>
+    );
+  }, [muted, paused, isFullScreen, playerRef, isLoading]);
+
+  const renderChat = useMemo(() => {
+    return <Chat messageList={messageList} sendMessage={sendMessage} />;
+  }, [messageList]);
+
+  return (
+    <SafeAreaView
+      style={{
+        // height: isFullScreen ? '100%' : '30%',
+        // height: '100%',
+        // width: '100%',
+        flex: 1,
+        backgroundColor: 'grey',
+      }}>
+      {renderVideo}
+      {!isLoading && renderChat}
     </SafeAreaView>
   );
 };
