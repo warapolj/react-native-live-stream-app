@@ -3,8 +3,8 @@ import {io} from 'socket.io-client';
 let socket: any;
 
 export const connectSocket = () => {
-  socket = io('http://54.179.206.71:5000', {reconnection: true});
-  console.log('socket connected:', socket.connected);
+  socket = io('http://54.179.206.71:5000/', {reconnection: true});
+  return socket
 };
 
 export const disconnectSocket = () => {

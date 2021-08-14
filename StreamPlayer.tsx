@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Platform,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import Video, {
   LoadError,
@@ -16,7 +17,6 @@ import Video, {
 } from 'react-native-video';
 import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {Alert} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Chat, {IMessageList, mockMessage} from './Chat';
 import {
@@ -35,6 +35,7 @@ const VideoPlayer = () => {
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
+  const [isEnabledChat, setEnableChat] = useState(false);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -49,13 +50,6 @@ const VideoPlayer = () => {
   }, [isFullScreen]);
 
   useEffect(() => {
-    connectSocket();
-    subscribeToChat((err: boolean | null, data: any) => {
-      if (!err && data) {
-        setMessageList([...messageList, {...data}]);
-      }
-    });
-
     return () => {
       disconnectSocket();
     };
@@ -70,7 +64,18 @@ const VideoPlayer = () => {
   };
 
   const onReadyForDisplay = () => {
+    console.log('onReadyForDisplay')
     setIsLoading(false);
+
+    const socket = connectSocket();
+    if (socket?.connected) {
+      setEnableChat(true);
+      subscribeToChat((err: boolean | null, data: any) => {
+        if (!err && data) {
+          setMessageList([...messageList, {...data}]);
+        }
+      });
+    }
   };
 
   const onProgress = (data: OnProgressData) => {
@@ -254,7 +259,7 @@ const VideoPlayer = () => {
         backgroundColor: 'grey',
       }}>
       {renderVideo}
-      {!isLoading && renderChat}
+      {isEnabledChat && renderChat}
     </SafeAreaView>
   );
 };

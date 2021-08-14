@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useKeyBoardOffset} from './hooks';
+import tailwind from 'tailwind-rn';
 
 export interface IMessageList {
   message: string;
@@ -187,12 +188,13 @@ export const mockMessage: IMessageList[] = [
 interface ChatProps {
   messageList: IMessageList[];
   sendMessage: (msg: string) => void;
+  onScrollX?: (offsetX: number) => void;
 }
 
 const {width} = Dimensions.get('window');
 
-const Chat: React.FC<ChatProps> = ({messageList, sendMessage}) => {
-  const scrollListRef = useRef(null);
+const Chat: React.FC<ChatProps> = ({messageList, sendMessage, onScrollX}) => {
+  const scrollMessageRef = useRef(null);
 
   const [message, setMessage] = useState('');
   const {keyboardOffset} = useKeyBoardOffset();
@@ -202,44 +204,28 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage}) => {
     setMessage('');
   }, [message]);
 
-  const setScrollOffset = (offset: number) => {
-    scrollListRef.current?.scrollToOffset({animated: true, offset});
-  };
-
   const renderItem = ({item, index}: {item: IMessageList; index: number}) => {
     return (
-      <View
-        key={'message' + index}
-        style={{
-          marginTop: 5,
-          marginBottom: 5,
-          flexDirection: 'row',
-          marginHorizontal: 10,
-          width: '100%',
-        }}>
-        <Image
-          source={{uri: item.sender.avatar}}
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 50,
-          }}
-          resizeMode="cover"
-        />
-        <View
-          style={{
-            backgroundColor: 'rgba(0,0,0,0.2)',
-            marginLeft: 5,
-            borderRadius: 15,
-          }}>
-          <Text
-            style={{
-              color: '#fff',
-              marginVertical: 5,
-              marginHorizontal: 10,
-            }}>
-            {item.message}
-          </Text>
+      <View style={[tailwind('flex-1 py-1 w-full')]} key={index}>
+        <View style={[tailwind('flex-row flex-1 px-2')]}>
+          <Image
+            source={{uri: item.sender.avatar}}
+            style={tailwind('w-8 h-8 rounded-full')}
+            resizeMode="cover"
+          />
+          <View
+            style={[
+              {backgroundColor: 'rgba(0,0,0,0.2)'},
+              tailwind('rounded-xl p-2 ml-1 mr-9'),
+            ]}>
+            <Text style={tailwind('font-bold text-white')}>
+              {item.sender.name}
+            </Text>
+            <Text style={tailwind('text-white')}>
+              {item.message}
+              {item.message}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -248,7 +234,13 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage}) => {
   const renderChatList = useMemo(() => {
     return (
       <View style={{flex: 1, width: width}}>
-        <ScrollView>
+        <ScrollView
+          ref={scrollMessageRef}
+          onContentSizeChange={() => {
+            if (scrollMessageRef.current) {
+              scrollMessageRef.current?.scrollToEnd({animated: true});
+            }
+          }}>
           {messageList.map((item, index) => renderItem({item, index}))}
         </ScrollView>
         <View
@@ -296,7 +288,11 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage}) => {
         width: '100%',
         height: '100%',
       }}>
-      <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={500}
+        onScroll={event => onScrollX(event.nativeEvent.contentOffset.x)}>
         <View style={{width}} />
         {renderChatList}
       </ScrollView>

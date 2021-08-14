@@ -3,7 +3,8 @@ import {Text, TouchableOpacity, View, SafeAreaView} from 'react-native';
 import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
-import Chat, {IMessageList} from './Chat';
+import {useNavigation} from '@react-navigation/native';
+import Chat, {IMessageList, mockMessage} from './Chat';
 import {
   connectSocket,
   disconnectSocket,
@@ -11,58 +12,70 @@ import {
   sendMessage,
 } from './socketio';
 
+enum StreamStatus {
+  Connecting = 2000,
+  StartPublishing = 2001,
+  ConnectionFailed = 2002,
+  ConnectionClosed = 2004,
+  PublishNetworkCongestion = 2100,
+}
+
 const StreamCamera = () => {
+  const navigation = useNavigation();
   const camera = useRef(null);
+
   const [isLive, setIsLive] = useState(false);
   const [stopwatchStart, setStopwatchStart] = useState(false);
   const [stopwatchReset, setStopwatchReset] = useState(false);
-  const [messageList, setMessageList] = useState<IMessageList[]>([]);
+  const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
+  const [isEnabledChat, setEnableChat] = useState(false);
+  const [isShowCtrl, setShowCtrl] = useState(true);
 
   useEffect(() => {
     return () => {
       camera.current?.stop();
+      disconnectSocket();
+      navigation.goBack();
     };
   }, []);
 
   useEffect(() => {
     if (isLive) {
-      connectSocket();
-      subscribeToChat((err: boolean | null, data: any) => {
-        if (!err && data) {
-          setMessageList([...messageList, {...data}]);
-        }
-      });
-    } else {
-      disconnectSocket();
-    }
-
-    return () => {
-      disconnectSocket();
-    };
-  }, [isLive]);
-
-  const toggleLiveButton = () => {
-    if (isLive) {
-      camera.current?.stop();
-      setIsLive(false);
-
-      setStopwatchStart(false);
-      setStopwatchReset(true);
-    } else {
       camera.current?.start();
-      setIsLive(true);
+      setStopwatchReset(false);
+      setStopwatchStart(true);
+      setEnableChat(true);
 
+      const socket = connectSocket();
+      if (socket?.connected) {
+        setEnableChat(true);
+        subscribeToChat((err: boolean | null, data: any) => {
+          if (!err && data) {
+            setMessageList([...messageList, {...data}]);
+          }
+        });
+      }
+    } else {
+      camera.current?.stop();
       setStopwatchReset(false);
       setStopwatchStart(true);
     }
-  };
+  }, [isLive]);
 
-  const onStatus = status => {
-    console.log('onStatus', status);
+  const onStatus = (status: number) => {
+    console.log('onStatus => ', StreamStatus[status]);
   };
 
   const renderChat = useMemo(() => {
-    return <Chat messageList={messageList} sendMessage={sendMessage} />;
+    return (
+      <Chat
+        messageList={messageList}
+        sendMessage={sendMessage}
+        onScrollX={offsetX => {
+          setShowCtrl(offsetX <= 50);
+        }}
+      />
+    );
   }, []);
 
   const renderStopWatchTimer = useMemo(() => {
@@ -125,12 +138,14 @@ const StreamCamera = () => {
       <View
         style={{
           position: 'absolute',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           width: '100%',
-          height: '100%',
+          height: 100,
+          zIndex: 1
         }}>
-        <TouchableOpacity style={{marginBottom: 50}} onPress={toggleLiveButton}>
+        <TouchableOpacity
+          style={{marginBottom: 50}}
+          onPress={() => setIsLive(!isLive)}>
           <Icon
             name={isLive ? 'pause-circle-outline' : 'play-circle-outline'}
             size={50}
@@ -140,6 +155,17 @@ const StreamCamera = () => {
       </View>
     );
   }, [isLive]);
+
+  const renderCtrl = useMemo(() => {
+    if (!isShowCtrl) return <></>;
+
+    return (
+      <>
+        {renderCtrlLiveTime}
+        {renderCtrlLiveButton}
+      </>
+    );
+  }, [isShowCtrl, isLive]);
 
   return (
     <SafeAreaView style={{flex: 1}}>
@@ -159,12 +185,12 @@ const StreamCamera = () => {
           videoFrontMirror: false,
         }}
         autopreview={true}
+        denoise
         onStatus={onStatus}
         dynamicRateEnable={true}
       />
-      {renderCtrlLiveTime}
-      {renderCtrlLiveButton}
-      {isLive && renderChat}
+      {renderCtrl}
+      {isEnabledChat && renderChat}
     </SafeAreaView>
   );
 };
