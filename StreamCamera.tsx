@@ -95,6 +95,8 @@ const StreamCamera = () => {
           'Could not access the specified channel or stream key, please double-check your stream key. If it is correct, there may be a problem connecting to the server.',
         );
         return;
+      case STREAM_STATUS.PublishNetworkCongestion:
+        onException('Network problem!!', 'Please try again.');
       default:
         onException('Error!!', 'Please try again.');
     }
@@ -200,7 +202,7 @@ const StreamCamera = () => {
             }
           }}>
           <Icon
-            name={isLive ? 'pause-circle-outline' : 'play-circle-outline'}
+            name={isLive ? 'stop-circle-outline' : 'play-circle-outline'}
             size={50}
             color="#fff"
           />
