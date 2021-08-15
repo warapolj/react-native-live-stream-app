@@ -292,7 +292,9 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage, onScrollX}) => {
         horizontal={true}
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={500}
-        onScroll={event => onScrollX(event.nativeEvent.contentOffset.x)}>
+        onScroll={event =>
+          onScrollX && onScrollX(event.nativeEvent.contentOffset.x)
+        }>
         <View style={{width}} />
         {renderChatList}
       </ScrollView>

@@ -35,7 +35,6 @@ const VideoPlayer = () => {
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
-  const [isEnabledChat, setEnableChat] = useState(false);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -50,6 +49,15 @@ const VideoPlayer = () => {
   }, [isFullScreen]);
 
   useEffect(() => {
+    const socket = connectSocket();
+    if (socket?.connected) {
+      subscribeToChat((err: boolean | null, data: any) => {
+        if (!err && data) {
+          setMessageList([...messageList, {...data}]);
+        }
+      });
+    }
+
     return () => {
       disconnectSocket();
     };
@@ -64,18 +72,7 @@ const VideoPlayer = () => {
   };
 
   const onReadyForDisplay = () => {
-    console.log('onReadyForDisplay')
     setIsLoading(false);
-
-    const socket = connectSocket();
-    if (socket?.connected) {
-      setEnableChat(true);
-      subscribeToChat((err: boolean | null, data: any) => {
-        if (!err && data) {
-          setMessageList([...messageList, {...data}]);
-        }
-      });
-    }
   };
 
   const onProgress = (data: OnProgressData) => {
@@ -86,27 +83,23 @@ const VideoPlayer = () => {
     console.log('onBandwidthUpdate', data);
   };
 
-  const onEnd = () => {
-    // Alert.alert('This live is finished.', '', [
-    //   {
-    //     text: 'OK',
-    //     onPress: () => navigation.goBack(),
-    //   },
-    // ]);
+  const onException = (title: string, description?: string) => {
+    Alert.alert(title, description, [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
   };
 
   const onError = (error: LoadError) => {
     console.log('onError', error);
-    if (
-      error.error?.code === -1100 ||
-      error.error?.domain === 'NSURLErrorDomain'
-    ) {
-      // Alert.alert('This live is finished.', '', [
-      //   {
-      //     text: 'OK',
-      //     onPress: () => navigation.goBack(),
-      //   },
-      // ]);
+
+    // Android & IOS
+    if (error.error?.extra === -1004 || error.error?.code === -1100) {
+      onException('This live is not found.', 'Please try again.');
+    } else {
+      onException('Error!!', 'Please try again.');
     }
   };
 
@@ -166,6 +159,7 @@ const VideoPlayer = () => {
             alignSelf: 'center',
             width: '100%',
             height: '100%',
+            backgroundColor: 'transparent',
           }}>
           <ActivityIndicator size="large" color="#fff" animating={true} />
         </View>
@@ -225,7 +219,7 @@ const VideoPlayer = () => {
           onReadyForDisplay={onReadyForDisplay}
           // onProgress={onProgress}
           onBandwidthUpdate={onBandwidthUpdate}
-          onEnd={onEnd}
+          onEnd={() => onException('This live is finished.')}
           onError={onError}
           style={[
             {
@@ -259,7 +253,7 @@ const VideoPlayer = () => {
         backgroundColor: 'grey',
       }}>
       {renderVideo}
-      {isEnabledChat && renderChat}
+      {!isLoading && renderChat}
     </SafeAreaView>
   );
 };

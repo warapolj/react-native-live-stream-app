@@ -1,5 +1,5 @@
 import React, {useRef, useState, useMemo, useEffect} from 'react';
-import {Text, TouchableOpacity, View, SafeAreaView} from 'react-native';
+import {Text, TouchableOpacity, View, SafeAreaView, Alert} from 'react-native';
 import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
@@ -12,13 +12,15 @@ import {
   sendMessage,
 } from './socketio';
 
-enum StreamStatus {
+enum STREAM_STATUS {
   Connecting = 2000,
   StartPublishing = 2001,
   ConnectionFailed = 2002,
   ConnectionClosed = 2004,
   PublishNetworkCongestion = 2100,
 }
+
+type StreamStatus = 2000 | 2001 | 2002 | 2004 | 2100;
 
 const StreamCamera = () => {
   const navigation = useNavigation();
@@ -30,6 +32,7 @@ const StreamCamera = () => {
   const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
   const [isEnabledChat, setEnableChat] = useState(false);
   const [isShowCtrl, setShowCtrl] = useState(true);
+  const [isLoading, setLoading] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -39,31 +42,62 @@ const StreamCamera = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (isLive) {
-      camera.current?.start();
-      setStopwatchReset(false);
-      setStopwatchStart(true);
+  const onStartPublishing = () => {
+    setLoading(false);
+    setIsLive(true);
+    setStopwatchReset(false);
+    setStopwatchStart(true);
+    setEnableChat(true);
+
+    const socket = connectSocket();
+    if (socket?.connected) {
       setEnableChat(true);
-
-      const socket = connectSocket();
-      if (socket?.connected) {
-        setEnableChat(true);
-        subscribeToChat((err: boolean | null, data: any) => {
-          if (!err && data) {
-            setMessageList([...messageList, {...data}]);
-          }
-        });
-      }
-    } else {
-      camera.current?.stop();
-      setStopwatchReset(false);
-      setStopwatchStart(true);
+      subscribeToChat((err: boolean | null, data: any) => {
+        if (!err && data) {
+          setMessageList([...messageList, {...data}]);
+        }
+      });
     }
-  }, [isLive]);
+  };
 
-  const onStatus = (status: number) => {
-    console.log('onStatus => ', StreamStatus[status]);
+  const onStopPublishing = () => {
+    setLoading(false);
+    setIsLive(false);
+    setStopwatchReset(false);
+    setStopwatchStart(true);
+  };
+
+  const onException = (title: string, description: string) => {
+    camera.current?.stop();
+    Alert.alert(title, description, [
+      {
+        text: 'OK',
+        onPress: () => navigation.goBack(),
+      },
+    ]);
+  };
+
+  const onStatus = (status: StreamStatus) => {
+    console.log('onStatus => ', STREAM_STATUS[status]);
+    switch (status) {
+      case STREAM_STATUS.StartPublishing:
+        onStartPublishing();
+        return;
+      case STREAM_STATUS.ConnectionClosed:
+        onStopPublishing();
+        return;
+      case STREAM_STATUS.Connecting:
+        setLoading(true);
+        return;
+      case STREAM_STATUS.ConnectionFailed:
+        onException(
+          'Connection failed!!',
+          'Could not access the specified channel or stream key, please double-check your stream key. If it is correct, there may be a problem connecting to the server.',
+        );
+        return;
+      default:
+        onException('Error!!', 'Please try again.');
+    }
   };
 
   const renderChat = useMemo(() => {
@@ -134,18 +168,37 @@ const StreamCamera = () => {
   }, [isLive]);
 
   const renderCtrlLiveButton = useMemo(() => {
+    if (isLoading) {
+      return (
+        <View
+          style={{
+            position: 'absolute',
+            alignItems: 'center',
+            width: '100%',
+            backgroundColor: '#10BAFA',
+          }}>
+          <Text style={{padding: 5, color: '#fff'}}>Connecting...</Text>
+        </View>
+      );
+    }
+
     return (
       <View
         style={{
           position: 'absolute',
           alignItems: 'flex-end',
           width: '100%',
-          height: 100,
-          zIndex: 1
+          zIndex: 1,
         }}>
         <TouchableOpacity
-          style={{marginBottom: 50}}
-          onPress={() => setIsLive(!isLive)}>
+          disabled={isLoading}
+          onPress={() => {
+            if (isLive) {
+              camera.current?.stop();
+            } else {
+              camera.current?.start();
+            }
+          }}>
           <Icon
             name={isLive ? 'pause-circle-outline' : 'play-circle-outline'}
             size={50}
@@ -154,7 +207,7 @@ const StreamCamera = () => {
         </TouchableOpacity>
       </View>
     );
-  }, [isLive]);
+  }, [isLive, isLoading]);
 
   const renderCtrl = useMemo(() => {
     if (!isShowCtrl) return <></>;
@@ -165,7 +218,7 @@ const StreamCamera = () => {
         {renderCtrlLiveButton}
       </>
     );
-  }, [isShowCtrl, isLive]);
+  }, [isShowCtrl, isLive, isLoading]);
 
   return (
     <SafeAreaView style={{flex: 1}}>
