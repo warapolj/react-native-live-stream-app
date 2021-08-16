@@ -13,18 +13,18 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useKeyBoardOffset} from './hooks';
 import tailwind from 'tailwind-rn';
 
-export interface IMessageList {
-  message: string;
+export interface MessageContent {
+  content: string;
   sender: {
     avatar: string;
     name: string;
-    time?: Date;
   };
+  time?: Date;
 }
 
-export const mockMessage: IMessageList[] = [
+export const mockMessage: MessageContent[] = [
   {
-    message: 'It has survived not only five centuries',
+    content: 'It has survived not only five centuries',
     sender: {
       name: 'Roberto',
       avatar:
@@ -32,7 +32,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'The point of using Lorem Ipsum is that it',
+    content: 'The point of using Lorem Ipsum is that it',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -40,7 +40,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'Contrary to popular belief',
+    content: 'Contrary to popular belief',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -48,7 +48,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'On the other hand',
+    content: 'On the other hand',
     sender: {
       name: 'Robot',
       avatar:
@@ -56,7 +56,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'It has survived not only five centuries',
+    content: 'It has survived not only five centuries',
     sender: {
       name: 'Roberto',
       avatar:
@@ -64,7 +64,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'The point of using Lorem Ipsum is that it',
+    content: 'The point of using Lorem Ipsum is that it',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -72,7 +72,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'Contrary to popular belief',
+    content: 'Contrary to popular belief',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -80,7 +80,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'On the other hand',
+    content: 'On the other hand',
     sender: {
       name: 'Robot',
       avatar:
@@ -88,7 +88,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'It has survived not only five centuries',
+    content: 'It has survived not only five centuries',
     sender: {
       name: 'Roberto',
       avatar:
@@ -96,7 +96,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'The point of using Lorem Ipsum is that',
+    content: 'The point of using Lorem Ipsum is that',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -104,7 +104,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'Contrary to popular belief',
+    content: 'Contrary to popular belief',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -112,7 +112,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'On the other hand',
+    content: 'On the other hand',
     sender: {
       name: 'Robot',
       avatar:
@@ -120,7 +120,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'It has survived not only five centuries',
+    content: 'It has survived not only five centuries',
     sender: {
       name: 'Roberto',
       avatar:
@@ -128,7 +128,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'The point of using Lorem Ipsum is',
+    content: 'The point of using Lorem Ipsum is',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -136,7 +136,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'Contrary to popular belief',
+    content: 'Contrary to popular belief',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -144,7 +144,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'On the other hand',
+    content: 'On the other hand',
     sender: {
       name: 'Robot',
       avatar:
@@ -152,7 +152,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'It has survived not only five centuries',
+    content: 'It has survived not only five centuries',
     sender: {
       name: 'Roberto',
       avatar:
@@ -160,7 +160,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'The point of using Lorem Ipsum is that it',
+    content: 'The point of using Lorem Ipsum is that it',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -168,7 +168,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'Contrary to popular belief',
+    content: 'Contrary to popular belief',
     sender: {
       name: 'Akihiko',
       avatar:
@@ -176,7 +176,7 @@ export const mockMessage: IMessageList[] = [
     },
   },
   {
-    message: 'On the other hand',
+    content: 'On the other hand',
     sender: {
       name: 'Robot',
       avatar:
@@ -186,8 +186,8 @@ export const mockMessage: IMessageList[] = [
 ];
 
 interface ChatProps {
-  messageList: IMessageList[];
-  sendMessage: (msg: string) => void;
+  messageList: MessageContent[];
+  sendMessage: (data: MessageContent) => void;
   onScrollX?: (offsetX: number) => void;
 }
 
@@ -196,15 +196,23 @@ const {width} = Dimensions.get('window');
 const Chat: React.FC<ChatProps> = ({messageList, sendMessage, onScrollX}) => {
   const scrollMessageRef = useRef(null);
 
-  const [message, setMessage] = useState('');
   const {keyboardOffset} = useKeyBoardOffset();
 
+  const [message, setMessage] = useState('');
+
   const onSendMessage = useCallback(() => {
-    sendMessage(message);
+    sendMessage({
+      content: message,
+      sender: {
+        name: 'Keng',
+        avatar:
+          'https://i.pinimg.com/236x/75/89/87/75898779184001f29b3cf38d45b23c36.jpg',
+      },
+    });
     setMessage('');
   }, [message]);
 
-  const renderItem = ({item, index}: {item: IMessageList; index: number}) => {
+  const renderItem = ({item, index}: {item: MessageContent; index: number}) => {
     return (
       <View style={[tailwind('flex-1 py-1 w-full')]} key={index}>
         <View style={[tailwind('flex-row flex-1 px-2')]}>
@@ -221,10 +229,7 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage, onScrollX}) => {
             <Text style={tailwind('font-bold text-white')}>
               {item.sender.name}
             </Text>
-            <Text style={tailwind('text-white')}>
-              {item.message}
-              {item.message}
-            </Text>
+            <Text style={tailwind('text-white')}>{item.content}</Text>
           </View>
         </View>
       </View>
@@ -233,7 +238,7 @@ const Chat: React.FC<ChatProps> = ({messageList, sendMessage, onScrollX}) => {
 
   const renderChatList = useMemo(() => {
     return (
-      <View style={{flex: 1, width: width}}>
+      <View style={{flex: 1, width, backgroundColor: 'rgba(0,0,0,0.2)'}}>
         <ScrollView
           ref={scrollMessageRef}
           onContentSizeChange={() => {

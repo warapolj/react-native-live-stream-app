@@ -18,23 +18,19 @@ import Video, {
 import Orientation from 'react-native-orientation';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
-import Chat, {IMessageList, mockMessage} from './Chat';
-import {
-  connectSocket,
-  disconnectSocket,
-  subscribeToChat,
-  sendMessage,
-} from './socketio';
+import Chat, {mockMessage} from './Chat';
+import {useChat} from './hooks';
 
 const VideoPlayer = () => {
   const navigation = useNavigation();
   const playerRef = useRef(null);
 
+  const {isConnected, sendMessage, messageList} = useChat();
+
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
 
   useEffect(() => {
     if (isFullScreen) {
@@ -47,21 +43,6 @@ const VideoPlayer = () => {
       Orientation.lockToPortrait();
     };
   }, [isFullScreen]);
-
-  useEffect(() => {
-    const socket = connectSocket();
-    if (socket?.connected) {
-      subscribeToChat((err: boolean | null, data: any) => {
-        if (!err && data) {
-          setMessageList([...messageList, {...data}]);
-        }
-      });
-    }
-
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
 
   const onLoad = (data: OnLoadData) => {
     console.log('onLoad', data);
@@ -105,22 +86,24 @@ const VideoPlayer = () => {
 
   const renderCtrlIsLive = useMemo(() => {
     return (
-      <View
-        style={{
-          position: 'absolute',
-          backgroundColor: 'red',
-          width: 50,
-          borderRadius: 5,
-          marginTop: 15,
-          marginLeft: 15,
-          alignItems: 'center',
-        }}>
-        <Text style={{padding: 5, color: '#fff', fontWeight: 'bold'}}>
-          Live
-        </Text>
-      </View>
+      !isLoading && (
+        <View
+          style={{
+            position: 'absolute',
+            backgroundColor: 'red',
+            width: 50,
+            borderRadius: 5,
+            marginTop: 15,
+            marginLeft: 15,
+            alignItems: 'center',
+          }}>
+          <Text style={{padding: 5, color: '#fff', fontWeight: 'bold'}}>
+            Live
+          </Text>
+        </View>
+      )
     );
-  }, []);
+  }, [isLoading]);
 
   const renderCtrlPlayPause = useMemo(() => {
     return (
@@ -201,46 +184,47 @@ const VideoPlayer = () => {
 
   const renderVideo = useMemo(() => {
     return (
-      <>
-        <Video
-          ref={playerRef}
-          source={{
-            uri: 'https://4144f7c510c7.us-east-1.playback.live-video.net/api/video/v1/us-east-1.302125021807.channel.R6hCSBhdIYmy.m3u8',
-          }}
-          rate={1}
-          volume={1}
-          muted={muted}
-          paused={paused}
-          resizeMode="cover"
-          progressUpdateInterval={1000}
-          fullscreen={Platform.OS === 'android' ? isFullScreen : false}
-          onLoad={onLoad}
-          onBuffer={onBuffer}
-          onReadyForDisplay={onReadyForDisplay}
-          // onProgress={onProgress}
-          onBandwidthUpdate={onBandwidthUpdate}
-          onEnd={() => onException('This live is finished.')}
-          onError={onError}
-          style={[
-            {
-              flex: 1,
-              // position: 'absolute',
-              // aspectRatio: width / height,
-              backgroundColor: '#000',
-              // height: '100%',
-              // width: '100%',
-            },
-            // isShowCtrl && {opacity: 0.5},
-          ]}
-        />
-        {renderCtrlIsLive}
-        {renderLoading}
-      </>
+      <Video
+        ref={playerRef}
+        source={{
+          uri: 'https://4144f7c510c7.us-east-1.playback.live-video.net/api/video/v1/us-east-1.302125021807.channel.R6hCSBhdIYmy.m3u8',
+        }}
+        rate={1}
+        volume={1}
+        muted={muted}
+        paused={paused}
+        resizeMode="cover"
+        progressUpdateInterval={1000}
+        fullscreen={Platform.OS === 'android' ? isFullScreen : false}
+        onLoad={onLoad}
+        onBuffer={onBuffer}
+        onReadyForDisplay={onReadyForDisplay}
+        // onProgress={onProgress}
+        onBandwidthUpdate={onBandwidthUpdate}
+        onEnd={() => onException('This live is finished.')}
+        onError={onError}
+        style={[
+          {
+            flex: 1,
+            // position: 'absolute',
+            // aspectRatio: width / height,
+            backgroundColor: '#000',
+            // height: '100%',
+            // width: '100%',
+          },
+          // isShowCtrl && {opacity: 0.5},
+        ]}
+      />
     );
   }, [muted, paused, isFullScreen, playerRef, isLoading]);
 
   const renderChat = useMemo(() => {
-    return <Chat messageList={messageList} sendMessage={sendMessage} />;
+    return (
+      <Chat
+        messageList={[...mockMessage, ...messageList]}
+        sendMessage={sendMessage}
+      />
+    );
   }, [messageList]);
 
   return (
@@ -253,7 +237,9 @@ const VideoPlayer = () => {
         backgroundColor: 'grey',
       }}>
       {renderVideo}
-      {!isLoading && renderChat}
+      {renderCtrlIsLive}
+      {renderLoading}
+      {isConnected && renderChat}
     </SafeAreaView>
   );
 };

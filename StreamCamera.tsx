@@ -4,13 +4,8 @@ import {NodeCameraView} from 'react-native-nodemediaclient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Stopwatch} from 'react-native-stopwatch-timer';
 import {useNavigation} from '@react-navigation/native';
-import Chat, {IMessageList, mockMessage} from './Chat';
-import {
-  connectSocket,
-  disconnectSocket,
-  subscribeToChat,
-  sendMessage,
-} from './socketio';
+import Chat, {mockMessage} from './Chat';
+import {useChat} from './hooks';
 
 enum STREAM_STATUS {
   Connecting = 2000,
@@ -26,10 +21,11 @@ const StreamCamera = () => {
   const navigation = useNavigation();
   const camera = useRef(null);
 
+  const {isConnected, messageList, sendMessage} = useChat();
+
   const [isLive, setIsLive] = useState(false);
   const [stopwatchStart, setStopwatchStart] = useState(false);
   const [stopwatchReset, setStopwatchReset] = useState(false);
-  const [messageList, setMessageList] = useState<IMessageList[]>(mockMessage);
   const [isEnabledChat, setEnableChat] = useState(false);
   const [isShowCtrl, setShowCtrl] = useState(true);
   const [isLoading, setLoading] = useState(false);
@@ -37,7 +33,6 @@ const StreamCamera = () => {
   useEffect(() => {
     return () => {
       camera.current?.stop();
-      disconnectSocket();
       navigation.goBack();
     };
   }, []);
@@ -48,16 +43,6 @@ const StreamCamera = () => {
     setStopwatchReset(false);
     setStopwatchStart(true);
     setEnableChat(true);
-
-    const socket = connectSocket();
-    if (socket?.connected) {
-      setEnableChat(true);
-      subscribeToChat((err: boolean | null, data: any) => {
-        if (!err && data) {
-          setMessageList([...messageList, {...data}]);
-        }
-      });
-    }
   };
 
   const onStopPublishing = () => {
@@ -105,14 +90,14 @@ const StreamCamera = () => {
   const renderChat = useMemo(() => {
     return (
       <Chat
-        messageList={messageList}
+        messageList={[...mockMessage, ...messageList]}
         sendMessage={sendMessage}
         onScrollX={offsetX => {
           setShowCtrl(offsetX <= 50);
         }}
       />
     );
-  }, []);
+  }, [messageList]);
 
   const renderStopWatchTimer = useMemo(() => {
     return (
@@ -211,17 +196,6 @@ const StreamCamera = () => {
     );
   }, [isLive, isLoading]);
 
-  const renderCtrl = useMemo(() => {
-    if (!isShowCtrl) return <></>;
-
-    return (
-      <>
-        {renderCtrlLiveTime}
-        {renderCtrlLiveButton}
-      </>
-    );
-  }, [isShowCtrl, isLive, isLoading]);
-
   return (
     <SafeAreaView style={{flex: 1}}>
       <NodeCameraView
@@ -244,8 +218,9 @@ const StreamCamera = () => {
         onStatus={onStatus}
         dynamicRateEnable={true}
       />
-      {renderCtrl}
-      {isEnabledChat && renderChat}
+      {isShowCtrl && renderCtrlLiveButton}
+      {renderCtrlLiveTime}
+      {isEnabledChat && isConnected && renderChat}
     </SafeAreaView>
   );
 };
